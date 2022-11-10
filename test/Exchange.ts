@@ -1,6 +1,12 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
-import { deployExchangeFixture, depositTokenFixture, makeOrderFixture, withdrawTokenFixture } from './fixtures';
+import {
+    deployExchangeFixture,
+    depositTokenFixture,
+    makeOrderFixture,
+    withdrawTokenFixture,
+    cancelOrderFixture
+} from './fixtures';
 import { BigNumber } from 'ethers';
 
 describe('Exchange', () => {
@@ -130,5 +136,52 @@ describe('Exchange', () => {
                     .to.be.revertedWith('Tokens deposited are not enough');
             });
         })
+    });
+
+    describe.only('Cancel order', () => {
+        describe('Success', () => {
+            it('Should track the cancelled order', async () => {
+                const { exchange, user1 } = await loadFixture(cancelOrderFixture);
+                expect(await exchange.connect(user1).orderCancelled(1)).to.be.true;
+            });
+
+            it('Should emit cancel event', async () => {
+                const {
+                    exchange,
+                    token1,
+                    token2,
+                    user1,
+                    amountGet,
+                    amountGive,
+                    cancelOrderTx,
+                    blockTimestamp
+                } = await loadFixture(cancelOrderFixture);
+
+                expect(cancelOrderTx)
+                    .to.emit(exchange, 'Cancel')
+                    .withArgs(
+                        1,
+                        user1.address,
+                        token2.address,
+                        amountGet,
+                        token1.address,
+                        amountGive,
+                        blockTimestamp)
+            });
+        });
+
+        describe('Failure', () => {
+            it('Should be reverted if the order id is invalid', async () => {
+                const { exchange, user1 } = await loadFixture(makeOrderFixture);
+                await expect(exchange.connect(user1).cancelOrder(9999))
+                    .to.be.revertedWith('Order doesn\'t exist');
+            });
+            
+            it('Should be reverted on unauthorized cancellations', async () => {
+                const { exchange } = await loadFixture(makeOrderFixture);
+                await expect(exchange.cancelOrder(1))
+                    .to.be.revertedWith('Only the order maker can cancel the order');
+            })
+        });
     });
 });

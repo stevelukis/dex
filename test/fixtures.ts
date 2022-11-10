@@ -56,3 +56,14 @@ export const makeOrderFixture = async () => {
 
     return { ...stuffs, amountGet, amountGive, makeOrderTx, blockTimestamp };
 }
+
+export const cancelOrderFixture = async () => {
+    const stuffs = await makeOrderFixture();
+    const { exchange, user1 } = stuffs;
+
+    const cancelOrderTx = await exchange.connect(user1).cancelOrder(1);
+    const receipt = await cancelOrderTx.wait();
+    const blockTimestamp = (await ethers.provider.getBlock(receipt.blockNumber)).timestamp;
+
+    return { ...stuffs, cancelOrderTx, blockTimestamp };
+}
