@@ -1,6 +1,7 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
-import { deployExchangeFixture, depositTokenFixture, withdrawTokenFixture } from './fixtures';
+import { deployExchangeFixture, depositTokenFixture, makeOrderFixture, withdrawTokenFixture } from './fixtures';
+import { BigNumber } from 'ethers';
 
 describe('Exchange', () => {
     describe('Deployment', () => {
@@ -60,5 +61,67 @@ describe('Exchange', () => {
                     .to.be.revertedWith('Amount exceeds token balance');
             });
         });
+    });
+
+    describe('Make order', () => {
+        describe('Success', () => {
+            it('Should return the correct order count', async () => {
+                const { exchange } = await loadFixture(makeOrderFixture);
+                expect(await exchange.orderCount()).to.equal(1);
+            });
+
+            it('Should save the order', async () => {
+                const {
+                    exchange,
+                    token1,
+                    token2,
+                    user1,
+                    amountGet,
+                    amountGive,
+                    blockTimestamp
+                } = await loadFixture(makeOrderFixture);
+
+                const order = await exchange.orders(1);
+
+                expect(order[0]).to.equal(BigNumber.from(1));
+                expect(order[1]).to.equal(user1.address);
+                expect(order[2]).to.equal(token2.address);
+                expect(order[3]).to.equal(amountGet);
+                expect(order[4]).to.equal(token1.address);
+                expect(order[5]).to.equal(amountGive);
+                expect(order[6]).to.equal(BigNumber.from(blockTimestamp));
+            });
+
+            it('Should emit an Order event', async () => {
+                const {
+                    exchange,
+                    token1,
+                    token2,
+                    user1,
+                    amountGet,
+                    amountGive,
+                    tx,
+                    blockTimestamp
+                } = await loadFixture(makeOrderFixture);
+
+                expect(tx)
+                    .to.emit(exchange, 'Order')
+                    .withArgs(
+                        1,
+                        user1.address,
+                        token2.address,
+                        amountGet,
+                        token1.address,
+                        amountGive,
+                        blockTimestamp)
+            })
+        });
+        describe('Failure', () => {
+            it('Should be reverted if token balance is insufficient', async () => {
+                const { exchange, user1, token1, token2 } = await loadFixture(deployExchangeFixture);
+                await expect(exchange.connect(user1).makeOrder(token2.address, 1, token1.address, 10))
+                    .to.be.revertedWith('Tokens deposited are not enough');
+            });
+        })
     });
 });

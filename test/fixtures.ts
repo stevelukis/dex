@@ -15,9 +15,12 @@ export const deployExchangeFixture = async () => {
     const token1Contract = await Token.deploy('Dapp University', 'DAPP', ethToWei('1000000'));
     const token1 = await ethers.getContractAt('Token', token1Contract.address);
 
+    const token2Contract = await Token.deploy('Mock Dai', 'mDAI', ethToWei('1000000'));
+    const token2 = await ethers.getContractAt('Token', token2Contract.address);
+
     await token1.transfer(user1.address, ethToWei(100))
 
-    return { owner, feeAccount, user1, feePercent, exchange, token1 };
+    return { owner, feeAccount, user1, feePercent, exchange, token1, token2 };
 };
 
 export const depositTokenFixture = async () => {
@@ -38,4 +41,18 @@ export const withdrawTokenFixture = async () => {
     await exchange.connect(user1).withdrawToken(token1.address, amount);
 
     return stuffs;
+}
+
+export const makeOrderFixture = async () => {
+    const stuffs = await depositTokenFixture();
+    const { exchange, token1, token2, user1, amount } = stuffs;
+
+    const amountGet = ethToWei(1);
+    const amountGive = amount;
+
+    const tx = await exchange.connect(user1).makeOrder(token2.address, amountGet, token1.address, amountGive);
+    const receipt = await tx.wait();
+    const blockTimestamp = (await ethers.provider.getBlock(receipt.blockNumber)).timestamp;
+
+    return { ...stuffs, amountGet, amountGive, tx, blockTimestamp };
 }
