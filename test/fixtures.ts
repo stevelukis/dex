@@ -30,17 +30,17 @@ export const depositTokenFixture = async () => {
     const amount = ethToWei(10);
 
     await token1.connect(user1).approve(exchange.address, amount);
-    await exchange.connect(user1).depositToken(token1.address, amount);
-    return { ...stuffs, amount }
+    const depositTx = await exchange.connect(user1).depositToken(token1.address, amount);
+    return { ...stuffs, amount, depositTx }
 }
 
 export const withdrawTokenFixture = async () => {
     const stuffs = await depositTokenFixture();
     const { exchange, token1, user1, amount } = stuffs;
 
-    const tx = await exchange.connect(user1).withdrawToken(token1.address, amount);
+    const withdrawTx = await exchange.connect(user1).withdrawToken(token1.address, amount);
 
-    return { ...stuffs, tx };
+    return { ...stuffs, withdrawTx };
 }
 
 export const makeOrderFixture = async () => {
@@ -50,9 +50,9 @@ export const makeOrderFixture = async () => {
     const amountGet = ethToWei(1);
     const amountGive = amount;
 
-    const tx = await exchange.connect(user1).makeOrder(token2.address, amountGet, token1.address, amountGive);
-    const receipt = await tx.wait();
+    const makeOrderTx = await exchange.connect(user1).makeOrder(token2.address, amountGet, token1.address, amountGive);
+    const receipt = await makeOrderTx.wait();
     const blockTimestamp = (await ethers.provider.getBlock(receipt.blockNumber)).timestamp;
 
-    return { ...stuffs, amountGet, amountGive, tx, blockTimestamp };
+    return { ...stuffs, amountGet, amountGive, makeOrderTx, blockTimestamp };
 }

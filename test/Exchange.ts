@@ -25,6 +25,13 @@ describe('Exchange', () => {
                 expect(await exchange.tokens(token1.address, user1.address)).to.equal(amount);
                 expect(await exchange.balanceOf(token1.address, user1.address)).to.equal(amount);
             });
+
+            it('Should emits a Deposit event', async () => {
+                const { exchange, token1, user1, amount, depositTx } = await loadFixture(depositTokenFixture);
+                await expect(depositTx)
+                    .to.emit(exchange, 'Deposit')
+                    .withArgs(token1.address, user1.address, amount, amount);
+            });
         });
 
         describe('Failure', () => {
@@ -47,8 +54,8 @@ describe('Exchange', () => {
             });
 
             it('Should emits a Withdraw event', async () => {
-                const { exchange, token1, user1, amount, tx } = await loadFixture(withdrawTokenFixture);
-                await expect(tx)
+                const { exchange, token1, user1, amount, withdrawTx } = await loadFixture(withdrawTokenFixture);
+                await expect(withdrawTx)
                     .to.emit(exchange, 'Withdraw')
                     .withArgs(token1.address, user1.address, amount, 0);
             });
@@ -100,11 +107,11 @@ describe('Exchange', () => {
                     user1,
                     amountGet,
                     amountGive,
-                    tx,
+                    makeOrderTx,
                     blockTimestamp
                 } = await loadFixture(makeOrderFixture);
 
-                expect(tx)
+                expect(makeOrderTx)
                     .to.emit(exchange, 'Order')
                     .withArgs(
                         1,
