@@ -2,22 +2,22 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { deployExchangeFixture, depositTokenFixture, withdrawTokenFixture } from './fixtures';
 
-describe('Exchange', function () {
-    describe('Deployment', function () {
-        it('Should return the correct fee account', async function () {
+describe('Exchange', () => {
+    describe('Deployment', () => {
+        it('Should return the correct fee account', async () => {
             const { exchange, feeAccount } = await loadFixture(deployExchangeFixture);
             expect(await exchange.feeAccount()).to.be.equal(feeAccount.address);
         });
 
-        it('Should return the correct fee percentage', async function () {
+        it('Should return the correct fee percentage', async () => {
             const { exchange, feePercent } = await loadFixture(deployExchangeFixture);
             expect(await exchange.feePercent()).to.be.equal(feePercent);
         });
     });
 
-    describe('Depositing Tokens', function () {
-        describe('Success', function () {
-            it('Should transfer the token to the exchange and save the balance', async function () {
+    describe('Depositing Tokens', () => {
+        describe('Success', () => {
+            it('Should transfer the token to the exchange and save the balance', async () => {
                 const { exchange, token1, amount, user1 } = await loadFixture(depositTokenFixture);
 
                 expect(await token1.balanceOf(exchange.address)).to.equal(amount);
@@ -26,8 +26,8 @@ describe('Exchange', function () {
             });
         });
 
-        describe('Failure', function () {
-            it('Should be reverted when no tokens are approved', async function () {
+        describe('Failure', () => {
+            it('Should be reverted when no tokens are approved', async () => {
                 const { exchange, user1, token1 } = await loadFixture(deployExchangeFixture);
                 await expect(exchange.connect(user1).depositToken(token1.address, 10))
                     .to.be.revertedWith('ERC20: transfer amount exceeds allowance');
@@ -35,9 +35,9 @@ describe('Exchange', function () {
         });
     });
 
-    describe('Withdraw tokens', function () {
-        describe('Success', function () {
-            it('Should withdraw token funds', async function () {
+    describe('Withdraw tokens', () => {
+        describe('Success', () => {
+            it('Should withdraw token funds', async () => {
                 const { exchange, token1, user1 } = await loadFixture(withdrawTokenFixture);
 
                 expect(await token1.balanceOf(exchange.address)).to.equal(0);
@@ -45,16 +45,16 @@ describe('Exchange', function () {
                 expect(await exchange.balanceOf(token1.address, user1.address)).to.equal(0);
             });
 
-            it('Should emits a Withdraw event', async function () {
+            it('Should emits a Withdraw event', async () => {
                 const { exchange, token1, user1, amount } = await depositTokenFixture();
                 await expect(exchange.connect(user1).withdrawToken(token1.address, amount))
                     .to.emit(exchange, 'Withdraw')
                     .withArgs(token1.address, user1.address, amount, 0);
             });
         });
-        
-        describe('Failure', function () {
-            it('Should be reverted when the token balance is insufficient', async function () {
+
+        describe('Failure', () => {
+            it('Should be reverted when the token balance is insufficient', async () => {
                 const { exchange, user1, token1 } = await loadFixture(deployExchangeFixture);
                 await expect(exchange.connect(user1).withdrawToken(token1.address, 10))
                     .to.be.revertedWith('Amount exceeds token balance');
