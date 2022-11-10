@@ -60,11 +60,12 @@ describe('Exchange', function () {
                 expect(await exchange.balanceOf(token1.address, user1.address)).to.equal(amount);
             });
         });
-        
+
         describe('Failure', function () {
-            it("Should be reverted when no tokens are approved", async function () {
-                const {exchange, user1, token1} = await loadFixture(deployExchangeFixture);
-                await expect(exchange.connect(user1).depositToken(token1.address, 10)).to.be.reverted;
+            it('Should be reverted when no tokens are approved', async function () {
+                const { exchange, user1, token1 } = await loadFixture(deployExchangeFixture);
+                await expect(exchange.connect(user1).depositToken(token1.address, 10))
+                    .to.be.revertedWith('ERC20: transfer amount exceeds allowance');
             })
         });
     });
