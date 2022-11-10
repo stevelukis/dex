@@ -1,9 +1,9 @@
 import { ethers } from "hardhat";
 import { ContractFactory } from "ethers";
-import { ethToWei } from "./utils";
+import { ethToWei, getBlockTimestampFromReceipt } from "./utils";
 
 export const deployExchangeFixture = async () => {
-    const [owner, feeAccount, user1] = await ethers.getSigners();
+    const [owner, feeAccount, user1, user2] = await ethers.getSigners();
 
     const feePercent = 10;
 
@@ -20,7 +20,7 @@ export const deployExchangeFixture = async () => {
 
     await token1.transfer(user1.address, ethToWei(100))
 
-    return { owner, feeAccount, user1, feePercent, exchange, token1, token2 };
+    return { owner, feeAccount, user1, user2, feePercent, exchange, token1, token2 };
 };
 
 export const depositTokenFixture = async () => {
@@ -51,8 +51,7 @@ export const makeOrderFixture = async () => {
     const amountGive = amount;
 
     const makeOrderTx = await exchange.connect(user1).makeOrder(token2.address, amountGet, token1.address, amountGive);
-    const receipt = await makeOrderTx.wait();
-    const blockTimestamp = (await ethers.provider.getBlock(receipt.blockNumber)).timestamp;
+    const blockTimestamp = getBlockTimestampFromReceipt(await makeOrderTx.wait());
 
     return { ...stuffs, amountGet, amountGive, makeOrderTx, blockTimestamp };
 }
@@ -62,8 +61,7 @@ export const cancelOrderFixture = async () => {
     const { exchange, user1 } = stuffs;
 
     const cancelOrderTx = await exchange.connect(user1).cancelOrder(1);
-    const receipt = await cancelOrderTx.wait();
-    const blockTimestamp = (await ethers.provider.getBlock(receipt.blockNumber)).timestamp;
+    const blockTimestamp = getBlockTimestampFromReceipt(await cancelOrderTx.wait());
 
     return { ...stuffs, cancelOrderTx, blockTimestamp };
 }
