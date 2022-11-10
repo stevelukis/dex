@@ -38,9 +38,9 @@ export const withdrawTokenFixture = async () => {
     const stuffs = await depositTokenFixture();
     const { exchange, token1, user1, amount } = stuffs;
 
-    await exchange.connect(user1).withdrawToken(token1.address, amount);
+    const tx = await exchange.connect(user1).withdrawToken(token1.address, amount);
 
-    return stuffs;
+    return { ...stuffs, tx };
 }
 
 export const makeOrderFixture = async () => {

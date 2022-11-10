@@ -47,8 +47,8 @@ describe('Exchange', () => {
             });
 
             it('Should emits a Withdraw event', async () => {
-                const { exchange, token1, user1, amount } = await depositTokenFixture();
-                await expect(exchange.connect(user1).withdrawToken(token1.address, amount))
+                const { exchange, token1, user1, amount, tx } = await loadFixture(withdrawTokenFixture);
+                await expect(tx)
                     .to.emit(exchange, 'Withdraw')
                     .withArgs(token1.address, user1.address, amount, 0);
             });
