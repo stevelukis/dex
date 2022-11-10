@@ -60,8 +60,8 @@ describe('Exchange', () => {
             });
 
             it('Should emits a Withdraw event', async () => {
-                const { exchange, token1, user1, amount, withdrawTx } = await loadFixture(withdrawTokenFixture);
-                await expect(withdrawTx)
+                const { exchange, token1, user1, amount, tx } = await loadFixture(withdrawTokenFixture);
+                await expect(tx)
                     .to.emit(exchange, 'Withdraw')
                     .withArgs(token1.address, user1.address, amount, 0);
             });
@@ -113,11 +113,11 @@ describe('Exchange', () => {
                     user1,
                     amountGet,
                     amountGive,
-                    makeOrderTx,
+                    tx,
                     blockTimestamp
                 } = await loadFixture(makeOrderFixture);
 
-                expect(makeOrderTx)
+                expect(tx)
                     .to.emit(exchange, 'Order')
                     .withArgs(
                         1,
@@ -153,11 +153,11 @@ describe('Exchange', () => {
                     user1,
                     amountGet,
                     amountGive,
-                    cancelOrderTx,
+                    tx,
                     blockTimestamp
                 } = await loadFixture(cancelOrderFixture);
 
-                expect(cancelOrderTx)
+                expect(tx)
                     .to.emit(exchange, 'Cancel')
                     .withArgs(
                         1,

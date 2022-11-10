@@ -38,9 +38,9 @@ export const withdrawTokenFixture = async () => {
     const stuffs = await depositTokenFixture();
     const { exchange, token1, user1, amount } = stuffs;
 
-    const withdrawTx = await exchange.connect(user1).withdrawToken(token1.address, amount);
+    const tx = await exchange.connect(user1).withdrawToken(token1.address, amount);
 
-    return { ...stuffs, withdrawTx };
+    return { ...stuffs, tx };
 }
 
 export const makeOrderFixture = async () => {
@@ -50,18 +50,18 @@ export const makeOrderFixture = async () => {
     const amountGet = ethToWei(1);
     const amountGive = amount;
 
-    const makeOrderTx = await exchange.connect(user1).makeOrder(token2.address, amountGet, token1.address, amountGive);
-    const blockTimestamp = getBlockTimestampFromReceipt(await makeOrderTx.wait());
+    const tx = await exchange.connect(user1).makeOrder(token2.address, amountGet, token1.address, amountGive);
+    const blockTimestamp = getBlockTimestampFromReceipt(await tx.wait());
 
-    return { ...stuffs, amountGet, amountGive, makeOrderTx, blockTimestamp };
+    return { ...stuffs, amountGet, amountGive, tx, blockTimestamp };
 }
 
 export const cancelOrderFixture = async () => {
     const stuffs = await makeOrderFixture();
     const { exchange, user1 } = stuffs;
 
-    const cancelOrderTx = await exchange.connect(user1).cancelOrder(1);
-    const blockTimestamp = getBlockTimestampFromReceipt(await cancelOrderTx.wait());
+    const tx = await exchange.connect(user1).cancelOrder(1);
+    const blockTimestamp = getBlockTimestampFromReceipt(await tx.wait());
 
-    return { ...stuffs, cancelOrderTx, blockTimestamp };
+    return { ...stuffs, tx, blockTimestamp };
 }
