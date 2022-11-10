@@ -11,6 +11,7 @@ contract Exchange {
     mapping(address => mapping(address => uint256)) public tokens;
     mapping(uint256 => _Order) public orders;
     mapping(uint256 => bool) public orderCancelled;
+    mapping(uint256 => bool) public orderFilled;
 
     uint256 public orderCount;
 
@@ -32,6 +33,16 @@ contract Exchange {
         uint256 amountGet,
         address tokenGive,
         uint256 amountGive,
+        uint256 timestamp
+    );
+    event Trade(
+        uint256 id,
+        address filler,
+        address tokenGet,
+        uint256 amountGet,
+        address tokenGive,
+        uint256 amountGive,
+        address creator,
         uint256 timestamp
     );
 
@@ -108,6 +119,54 @@ contract Exchange {
             order.amountGet,
             order.tokenGive,
             order.amountGive,
+            block.timestamp
+        );
+    }
+
+    function fillOrder(uint256 _id) public {
+        require(_id > 0 && _id <= orderCount, 'Order does not exist');
+        require(!orderFilled[_id], 'Order has been filled');
+        require(!orderCancelled[_id], 'Order has been cancelled');
+
+        _Order storage order = orders[_id];
+        _trade(order.id, order.user, order.tokenGet, order.amountGet, order.tokenGive, order.amountGive);
+
+        orderFilled[order.id] = true;
+    }
+
+    function _trade(
+        uint256 _orderId,
+        address _user,
+        address _tokenGet,
+        uint256 _amountGet,
+        address _tokenGive,
+        uint256 _amountGive
+    ) internal {
+        uint256 feeAmount = (_amountGet * feePercent) / 100;
+
+        // Deduct amountGet + feeAmount from order filler
+        tokens[_tokenGet][msg.sender] = tokens[_tokenGet][msg.sender] - (_amountGet + feeAmount);
+
+        // Give amountGet to order creator
+        tokens[_tokenGet][_user] = tokens[_tokenGet][_user] + _amountGet;
+
+        // Give the feeAmount to feeAccount
+        tokens[_tokenGet][feeAccount] = tokens[_tokenGet][feeAccount] + feeAmount;
+
+        // Deduct amountGive from order creator
+        tokens[_tokenGive][_user] = tokens[_tokenGive][_user] - _amountGive;
+
+        // Give amountGive to order filler
+        tokens[_tokenGive][msg.sender] = tokens[_tokenGive][msg.sender] + _amountGive;
+
+        emit Trade(
+            _orderId,
+            msg.sender,
+            _tokenGet,
+            _amountGet,
+            _tokenGive,
+            _amountGive,
+            _user,
             block.timestamp
         );
     }

@@ -1,13 +1,15 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import {
+    cancelOrderFixture,
     deployExchangeFixture,
     depositTokenFixture,
+    fillOrderFixture,
     makeOrderFixture,
-    withdrawTokenFixture,
-    cancelOrderFixture
+    withdrawTokenFixture
 } from './fixtures';
 import { BigNumber } from 'ethers';
+import { ethToWei } from './utils';
 
 describe('Exchange', () => {
     describe('Deployment', () => {
@@ -138,7 +140,7 @@ describe('Exchange', () => {
         })
     });
 
-    describe.only('Cancel order', () => {
+    describe('Cancel order', () => {
         describe('Success', () => {
             it('Should track the cancelled order', async () => {
                 const { exchange, user1 } = await loadFixture(cancelOrderFixture);
@@ -176,12 +178,92 @@ describe('Exchange', () => {
                 await expect(exchange.connect(user1).cancelOrder(9999))
                     .to.be.revertedWith('Order doesn\'t exist');
             });
-            
+
             it('Should be reverted on unauthorized cancellations', async () => {
                 const { exchange } = await loadFixture(makeOrderFixture);
                 await expect(exchange.cancelOrder(1))
                     .to.be.revertedWith('Only the order maker can cancel the order');
             })
+        });
+    });
+
+    describe.only('Fill order', () => {
+        describe('Success', () => {
+            it('Should return the correct balances', async () => {
+                const {
+                    exchange,
+                    token1,
+                    token2,
+                    user1,
+                    user2,
+                    feeAccount,
+                    feeAmount,
+                    amountGive,
+                    amountGet
+                } = await loadFixture(fillOrderFixture);
+
+                // Token1 Balances
+                expect(await exchange.balanceOf(token1.address, user1.address)).to.equal(ethToWei(0));
+                expect(await exchange.balanceOf(token1.address, user2.address)).to.equal(amountGive);
+                expect(await exchange.balanceOf(token1.address, feeAccount.address)).to.equal(ethToWei(0));
+
+                // Token2 Balances
+                expect(await exchange.balanceOf(token2.address, user1.address)).to.equal(amountGet);
+                expect(await exchange.balanceOf(token2.address, user2.address)).to.equal(0);
+                expect(await exchange.balanceOf(token2.address, feeAccount.address)).to.equal(feeAmount);
+            });
+
+            it('Should tracks filled order', async () => {
+                const { exchange } = await loadFixture(fillOrderFixture);
+                expect(await exchange.orderFilled(1)).to.be.true;
+            });
+
+            it('Should emit Trade event', async () => {
+                const {
+                    exchange,
+                    tx,
+                    user1,
+                    user2,
+                    token1,
+                    token2,
+                    blockTimestamp,
+                    amountGet,
+                    amountGive
+                } = await loadFixture(fillOrderFixture);
+
+                expect(tx)
+                    .to.emit(exchange, 'Cancel')
+                    .withArgs(
+                        1,
+                        user2.address,
+                        token2.address,
+                        amountGet,
+                        token1.address,
+                        amountGive,
+                        user1.address,
+                        blockTimestamp
+                    );
+            });
+        });
+
+        describe('Failure', async () => {
+            it('Should revert on invalid order id', async () => {
+                const { exchange, user2 } = await loadFixture(makeOrderFixture);
+                await expect(exchange.connect(user2).fillOrder(99999))
+                    .to.be.revertedWith('Order does not exist');
+            });
+
+            it('Should revert if order is filled', async () => {
+                const { exchange, user2 } = await loadFixture(fillOrderFixture);
+                await expect(exchange.connect(user2).fillOrder(1))
+                    .to.be.revertedWith('Order has been filled');
+            });
+
+            it('Should revert on invalid order id', async () => {
+                const { exchange, user2 } = await loadFixture(cancelOrderFixture);
+                await expect(exchange.connect(user2).fillOrder(1))
+                    .to.be.revertedWith('Order has been cancelled');
+            });
         });
     });
 });

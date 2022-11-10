@@ -4,7 +4,6 @@ import { ethToWei, getBlockTimestampFromReceipt } from "./utils";
 
 export const deployExchangeFixture = async () => {
     const [owner, feeAccount, user1, user2] = await ethers.getSigners();
-
     const feePercent = 10;
 
     const Exchange: ContractFactory = await ethers.getContractFactory('Exchange');
@@ -18,7 +17,8 @@ export const deployExchangeFixture = async () => {
     const token2Contract = await Token.deploy('Mock Dai', 'mDAI', ethToWei('1000000'));
     const token2 = await ethers.getContractAt('Token', token2Contract.address);
 
-    await token1.transfer(user1.address, ethToWei(100))
+    await token1.transfer(user1.address, ethToWei(100));
+    await token2.transfer(user2.address, ethToWei(100));
 
     return { owner, feeAccount, user1, user2, feePercent, exchange, token1, token2 };
 };
@@ -64,4 +64,20 @@ export const cancelOrderFixture = async () => {
     const blockTimestamp = getBlockTimestampFromReceipt(await tx.wait());
 
     return { ...stuffs, tx, blockTimestamp };
+}
+
+export const fillOrderFixture = async () => {
+    const stuffs = await makeOrderFixture();
+    const { exchange, token2, user2, feePercent, amountGet } = stuffs;
+
+    const feeAmount = amountGet.mul(feePercent).div(100);
+    const depositAmount = amountGet.add(feeAmount);
+
+    await token2.connect(user2).approve(exchange.address, depositAmount);
+    await exchange.connect(user2).depositToken(token2.address, depositAmount);
+
+    const tx = await exchange.connect(user2).fillOrder(1);
+    const blockTimestamp = getBlockTimestampFromReceipt(await tx.wait());
+
+    return { ...stuffs, tx, blockTimestamp, feeAmount };
 }
